@@ -27,7 +27,7 @@ extern "C" {
 #define BASE_VELOCITY 0.3
 #define MINIMAL_Y -400
 #define EPSILON 5
-
+#define SHELVES_NUMBER 3
 
 // narysowanie napisu txt na powierzchni screen, zaczynaj¹c od punktu (x, y)
 // charset to bitmapa 128x128 zawieraj¹ca znaki
@@ -134,7 +134,7 @@ int CheckCollision(SDL_Rect first, SDL_Rect second, char type)
 	return 1;
 }
 
-void ClearGame(double* distance, double* distance2, double* distance3, double* distance4, double* worldTime, double* worldRealTime, double* baseYPosition, double* yPosition, int* dashCd, double* screenMovement) {
+void ClearGame(double* distance, double* distance2, double* distance3, double* distance4, double* worldTime, double* worldRealTime, double* baseYPosition, double* yPosition, int* dashCd, double* screenMovement, double* yMovement, int* jumping, int* peak) {
 	*distance = 0;
 	*distance2 = 0;
 	*distance3 = 0;
@@ -145,6 +145,9 @@ void ClearGame(double* distance, double* distance2, double* distance3, double* d
 	*yPosition = 0;
 	*dashCd = 0;
 	*screenMovement = 0;
+	*yMovement = 0;
+	*jumping = 1;
+	*peak = 1;
 }
 
 // main
@@ -153,11 +156,12 @@ extern "C"
 #endif
 
 int main(int argc, char **argv) {
+	//wypierdol distance2 i distance4 i w ogole sprawdz czy to wszystko useful jest
 	int t1, t2, quit, frames, rc, jumping = 0, controls = 0, dash = 0, dashCd = 0, double_jump = 0, peak = 0, walking=0;
-	const double gravity = 300;
-	double delta, worldTime, worldRealTime, fpsTimer, fps, distance, distance2, distance3, distance4, velocity, yPosition, yVelocity, baseYPosition = 0, screenMovement = 0, yMovement = 0;
+	const double gravity = 300, shelfWidth[3] = { 900, 700, 1200 }, shelfHeight[3] = { 40, 60, 50 }, shelfShift[3] = { 0, 700, 1200 }, shelfElevation[3] = { 100, 240, 380 };
+	double delta, worldTime, worldRealTime, fpsTimer, fps, distance, distance2, distance3, distance4, shelfDistance[3] = { 0,0,0 }, velocity, yPosition, yVelocity, baseYPosition = 0, screenMovement = 0, yMovement = 0;
 	SDL_Event event;
-	SDL_Surface *screen, *charset, *unicorn, *platform, *background, *obstacle, *shelf, *hitbox, *hitbox2;
+	SDL_Surface *screen, *charset, *unicorn, *platform, *background, *obstacle, *shelf[3], *hitbox, *hitbox2;
 	SDL_Texture *scrtex;
 	SDL_Window *window;
 	SDL_Renderer *renderer;
@@ -213,7 +217,7 @@ int main(int argc, char **argv) {
 	//³aduje plik z unicornem
 	unicorn = SDL_LoadBMP("./unicorn.bmp");
 	if(unicorn == NULL) {
-		printf("SDL_LoadBMP(eti.bmp) error: %s\n", SDL_GetError());
+		printf("SDL_LoadBMP(unicorn.bmp) error: %s\n", SDL_GetError());
 		SDL_FreeSurface(charset);
 		SDL_FreeSurface(screen);
 		SDL_DestroyTexture(scrtex);
@@ -222,20 +226,45 @@ int main(int argc, char **argv) {
 		SDL_Quit();
 		return 1;
 		};
-
+	/*SDL_Surface **shelf = (SDL_Surface**)malloc(4 * sizeof(SDL_Surface*));
+	for (int i = 0; i < SHELVES_NUMBER; i++) shelf[i] = (SDL_Surface*)malloc(sizeof(SDL_Surface));*/
 	//³aduje plik z platform¹
-	shelf = SDL_LoadBMP("./floor.bmp");
-	if ( shelf == NULL) {
-		printf("SDL_LoadBMP(eti.bmp) error: %s\n", SDL_GetError());
-		SDL_FreeSurface(charset);
-		SDL_FreeSurface(screen);
-		SDL_DestroyTexture(scrtex);
-		SDL_DestroyWindow(window);
-		SDL_DestroyRenderer(renderer);
-		SDL_Quit();
-		return 1;
-	};
-
+	for (int i = 0; i < SHELVES_NUMBER; i++) {
+		shelf[i] = SDL_LoadBMP("./floor.bmp");
+		if (shelf[i] == NULL) {
+			printf("SDL_LoadBMP(floor.bmp) error: %s\n", SDL_GetError());
+			SDL_FreeSurface(charset);
+			SDL_FreeSurface(screen);
+			SDL_DestroyTexture(scrtex);
+			SDL_DestroyWindow(window);
+			SDL_DestroyRenderer(renderer);
+			SDL_Quit();
+			return 1;
+		};
+		/*shelf2 = SDL_LoadBMP("./obstacle.bmp");
+		if (shelf1 == NULL) {
+			printf("SDL_LoadBMP(floor.bmp) error: %s\n", SDL_GetError());
+			SDL_FreeSurface(charset);
+			SDL_FreeSurface(screen);
+			SDL_DestroyTexture(scrtex);
+			SDL_DestroyWindow(window);
+			SDL_DestroyRenderer(renderer);
+			SDL_Quit();
+			return 1;
+		};
+		shelf3 = SDL_LoadBMP("./obstacle.bmp");
+		if (shelf1 == NULL) {
+			printf("SDL_LoadBMP(floor.bmp) error: %s\n", SDL_GetError());
+			SDL_FreeSurface(charset);
+			SDL_FreeSurface(screen);
+			SDL_DestroyTexture(scrtex);
+			SDL_DestroyWindow(window);
+			SDL_DestroyRenderer(renderer);
+			SDL_Quit();
+			return 1;
+		};*/
+	}
+	
 	//³aduje pokazywanie hitboxa
 	hitbox = SDL_LoadBMP("./hitbox.bmp");
 	if (hitbox == NULL) {
@@ -274,6 +303,15 @@ int main(int argc, char **argv) {
 	unicorn->h = UNICORN_HEIGHT;
 	unicorn->w = UNICORN_WIDTH;
 
+	for (int i = 0; i < SHELVES_NUMBER; i++) {
+		shelf[i]->h = shelfHeight[i];
+		shelf[i]->w = shelfWidth[i];
+		/*shelf2->h = shelfHeight[1];
+		shelf2->w = shelfWidth[1];
+		shelf3->h = shelfHeight[2];
+		shelf3->w = shelfWidth[2];*/
+	}
+	
 	//wymiary hitboxu unicorna
 	unicorn_hitbox.h = UNICORN_HEIGHT;
 	unicorn_hitbox.w = UNICORN_WIDTH;
@@ -282,17 +320,10 @@ int main(int argc, char **argv) {
 	obstacle_hitbox.h = OBSTACLE_HEIGHT;
 	obstacle_hitbox.w = OBSTACLE_WIDTH;
 
-	/*platform_hitbox.h = PLATFORM_HEIGHT;
-	platform_hitbox.w = PLATFORM_WIDTH;*/
-
 	//wymiary hitboxu pod³ogi
-	shelf_hitbox[0].h = PLATFORM_HEIGHT;
-	shelf_hitbox[0].w = PLATFORM_WIDTH;
-	
-	//wymiary hitboxów platform
-	for (int i = 1; i < 3; i++) {
-		shelf_hitbox[i].h = SHELF_HEIGHT;
-		shelf_hitbox[i].w = SHELF_WIDTH;
+	for (int i = 0; i < SHELVES_NUMBER; i++) {
+		shelf_hitbox[i].h = shelfHeight[i];
+		shelf_hitbox[i].w = shelfWidth[i];
 	}
 	
 	//³aduje plik z przeszkoda
@@ -309,21 +340,21 @@ int main(int argc, char **argv) {
 	};
 
 	//przycinam przeszkodê
-	obstacle->h = 40;
-	obstacle->w = 70;
+	obstacle->h = OBSTACLE_HEIGHT;
+	obstacle->w = OBSTACLE_WIDTH;
 	
-	//³aduje plik z pod³og¹
-	platform = SDL_LoadBMP("./floor.bmp");
-	if (platform == NULL) {
-		printf("SDL_LoadBMP(eti.bmp) error: %s\n", SDL_GetError());
-		SDL_FreeSurface(charset);
-		SDL_FreeSurface(screen);
-		SDL_DestroyTexture(scrtex);
-		SDL_DestroyWindow(window);
-		SDL_DestroyRenderer(renderer);
-		SDL_Quit();
-		return 1;
-	};
+	////³aduje plik z pod³og¹
+	//platform = SDL_LoadBMP("./floor.bmp");
+	//if (platform == NULL) {
+	//	printf("SDL_LoadBMP(eti.bmp) error: %s\n", SDL_GetError());
+	//	SDL_FreeSurface(charset);
+	//	SDL_FreeSurface(screen);
+	//	SDL_DestroyTexture(scrtex);
+	//	SDL_DestroyWindow(window);
+	//	SDL_DestroyRenderer(renderer);
+	//	SDL_Quit();
+	//	return 1;
+	//};
 
 	//³aduje plik z t³em
 	background = SDL_LoadBMP("./background.bmp");
@@ -363,6 +394,8 @@ int main(int argc, char **argv) {
 	velocity = BASE_VELOCITY;
 	yPosition = baseYPosition;
 	yVelocity = 0;
+	jumping = 1;
+	peak = 1;
 
 	while (!quit) {
 
@@ -392,49 +425,49 @@ int main(int argc, char **argv) {
 
 		//hitbox unicorna
 		unicorn_hitbox.x = 0;
-		unicorn_hitbox.y = SCREEN_HEIGHT - UNICORN_HEIGHT - PLATFORM_HEIGHT - screenMovement;
+		unicorn_hitbox.y = SCREEN_HEIGHT / 2 - UNICORN_HEIGHT / 2 - screenMovement;
 
 		//hitbox przeszkód
 		obstacle_hitbox.x = SCREEN_WIDTH + 100 - distance3;
 		obstacle_hitbox.y = SCREEN_HEIGHT - OBSTACLE_HEIGHT - PLATFORM_HEIGHT + yMovement;
 
 		//hitboxy platform
-		shelf_hitbox[0].x = -distance4;
-		shelf_hitbox[0].y = SCREEN_HEIGHT - PLATFORM_HEIGHT - 150 + yMovement;
-		shelf_hitbox[1].x = 800 - distance4;
-		shelf_hitbox[1].y = SCREEN_HEIGHT - PLATFORM_HEIGHT - 240 + yMovement;
-		shelf_hitbox[2].x = 1400 - distance4;
-		shelf_hitbox[2].y = SCREEN_HEIGHT - PLATFORM_HEIGHT - 380 + yMovement;
-
+		for (int i = 0; i < 3; i++) {
+			shelf_hitbox[i].x = shelfShift[i]-shelfDistance[i];
+			shelf_hitbox[i].y = SCREEN_HEIGHT - PLATFORM_HEIGHT - shelfElevation[i] + yMovement;
+		}
 		//wype³niam ekran czarnym
 		SDL_FillRect(screen, NULL, czarny);
 
 		//t³o sie zapetla
 		if (distance > BACKGROUND_WIDTH - SCREEN_WIDTH) distance = 0;
 		//podloga sie zapetla
-		if (distance2 > PLATFORM_WIDTH - SCREEN_WIDTH) distance2 = 0;
+		//if (distance2 > PLATFORM_WIDTH - SCREEN_WIDTH) distance2 = 0;
 		//przeszkoda sie zapetla
 		if (SCREEN_WIDTH + 100 - distance3 < MINIMAL_Y) distance3 = 0;
 		//platformy sie zapetlaja
-		if (SCREEN_WIDTH + 100 - distance4 < -1200) distance4 = 0;
-
+		//if (SCREEN_WIDTH + 100 - distance4 < -1200) distance4 = 0;
+		//if (700 + SCREEN_WIDTH > shelfDistance[0]) shelfDistance[0] == 0;
+		for (int i = 0; i < SHELVES_NUMBER; i++) {
+			if (shelfShift[i] - shelfDistance[i] < -shelfWidth[i])shelfDistance[i]=0;
+		}
 		//tworze t³o
 		DrawSurface(screen, background, -distance, 0);
 		//tworze unicorna
-		DrawSurface(screen, unicorn, 0, (SCREEN_HEIGHT - UNICORN_HEIGHT - PLATFORM_HEIGHT - screenMovement));
-		//tworze podloge
-		DrawSurface(screen, platform, -distance2, SCREEN_HEIGHT - PLATFORM_HEIGHT + yMovement);
+		DrawSurface(screen, unicorn, 0, (SCREEN_HEIGHT/2 - UNICORN_HEIGHT/2 - screenMovement));
 		//tworze przeszkode
 		DrawSurface(screen, obstacle, SCREEN_WIDTH + 100 - distance3, SCREEN_HEIGHT - OBSTACLE_HEIGHT - PLATFORM_HEIGHT + yMovement);
-		//tworze platforme1
-		DrawSurface(screen, shelf, 800 - distance4, SCREEN_HEIGHT - PLATFORM_HEIGHT - 150 + yMovement);
-		//tworze platforme2
-		DrawSurface(screen, shelf, 1400 - distance4, SCREEN_HEIGHT - PLATFORM_HEIGHT - 320 + yMovement);
+		//tworze podloge
+		for (int i = 0; i < SHELVES_NUMBER; i++) {
+			DrawSurface(screen, shelf[i], shelfShift[i] - shelfDistance[i], SCREEN_HEIGHT - PLATFORM_HEIGHT - shelfElevation[i] + yMovement);
+			//DrawSurface(screen, shelf2, shelfShift[1] - shelfDistance[1], SCREEN_HEIGHT - PLATFORM_HEIGHT - shelfElevation[1] + yMovement);
+			//DrawSurface(screen, shelf3, shelfShift[2] - shelfDistance[2], SCREEN_HEIGHT - PLATFORM_HEIGHT - shelfElevation[2] + yMovement);
+		}
 		
 		//wyœwietlam hitboxy i troche useless protok¹tów
-		DrawSurface(screen, hitbox, shelf_hitbox[2].x, shelf_hitbox[2].y);
+		//DrawSurface(screen, hitbox, shelf_hitbox[2].x, shelf_hitbox[2].y);
 		//DrawSurface(screen, hitbox, platform_hitbox.x, platform_hitbox.y);
-		DrawSurface(screen, hitbox2, unicorn_hitbox.x, unicorn_hitbox.y);
+		//DrawSurface(screen, hitbox2, unicorn_hitbox.x, unicorn_hitbox.y);
 
 		//liczneie fpsow
 		fpsTimer += delta;
@@ -483,7 +516,7 @@ int main(int argc, char **argv) {
 
 		//resetuje gre
 		if (currentKeyStates[SDL_SCANCODE_N] || yPosition == MINIMAL_Y) {
-			ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement);
+			ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak);
 		}
 		if (currentKeyStates[SDL_SCANCODE_ESCAPE]) quit = 1;
 		
@@ -492,6 +525,7 @@ int main(int argc, char **argv) {
 			distance2 += velocity;
 			distance3 += velocity;
 			distance4 += velocity;
+			for (int i = 0; i < 3; i++) shelfDistance[i] += velocity;
 		}
 
 		if (dash) {
@@ -543,7 +577,7 @@ int main(int argc, char **argv) {
 		
 
 		if (CheckCollision(unicorn_hitbox, obstacle_hitbox, 'o')) {
-			ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement);
+			ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak);
 		}
 
 		//printf("%d\t%d\t%d\n", CheckCollision(unicorn_hitbox, shelf_hitbox[0], 'p'), CheckCollision(unicorn_hitbox, shelf_hitbox[1], 'p'), CheckCollision(unicorn_hitbox, shelf_hitbox[2], 'p'));
@@ -552,7 +586,7 @@ int main(int argc, char **argv) {
 		walking = 0;
 		for (int i = 0; i < 3; i++) {
 			if (CheckCollision(unicorn_hitbox, shelf_hitbox[i], 'p') == 1) {
-				ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement);
+				ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak);
 			}
 
 			if (CheckCollision(unicorn_hitbox, shelf_hitbox[i], 'p') == 2) {
