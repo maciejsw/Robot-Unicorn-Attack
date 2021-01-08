@@ -11,8 +11,6 @@ extern "C" {
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 #define BACKGROUND_WIDTH 1366
-#define PLATFORM_WIDTH 7000
-#define PLATFORM_HEIGHT 100
 #define UNICORN_WIDTH 40
 #define UNICORN_HEIGHT 40
 #define OBSTACLE_WIDTH 70
@@ -27,7 +25,7 @@ extern "C" {
 #define BASE_VELOCITY 0.3
 #define MINIMAL_Y -400
 #define EPSILON 5
-#define SHELVES_NUMBER 3
+#define SHELVES_NUMBER 5
 
 // narysowanie napisu txt na powierzchni screen, zaczynaj¹c od punktu (x, y)
 // charset to bitmapa 128x128 zawieraj¹ca znaki
@@ -134,7 +132,7 @@ int CheckCollision(SDL_Rect first, SDL_Rect second, char type)
 	return 1;
 }
 
-void ClearGame(double* distance, double* distance2, double* distance3, double* distance4, double* worldTime, double* worldRealTime, double* baseYPosition, double* yPosition, int* dashCd, double* screenMovement, double* yMovement, int* jumping, int* peak) {
+void ClearGame(double* distance, double* distance2, double* distance3, double* distance4, double* worldTime, double* worldRealTime, double* baseYPosition, double* yPosition, int* dashCd, double* screenMovement, double* yMovement, int* jumping, int* peak, double shelfDistance[]) {
 	*distance = 0;
 	*distance2 = 0;
 	*distance3 = 0;
@@ -148,6 +146,7 @@ void ClearGame(double* distance, double* distance2, double* distance3, double* d
 	*yMovement = 0;
 	*jumping = 1;
 	*peak = 1;
+	for (int i = 0; i < SHELVES_NUMBER; i++) shelfDistance[i] = 0;
 }
 
 // main
@@ -158,14 +157,20 @@ extern "C"
 int main(int argc, char **argv) {
 	//wypierdol distance2 i distance4 i w ogole sprawdz czy to wszystko useful jest
 	int t1, t2, quit, frames, rc, jumping = 0, controls = 0, dash = 0, dashCd = 0, double_jump = 0, peak = 0, walking=0;
-	const double gravity = 300, shelfWidth[3] = { 900, 700, 1200 }, shelfHeight[3] = { 40, 60, 50 }, shelfShift[3] = { 0, 700, 1200 }, shelfElevation[3] = { 100, 240, 380 };
-	double delta, worldTime, worldRealTime, fpsTimer, fps, distance, distance2, distance3, distance4, shelfDistance[3] = { 0,0,0 }, velocity, yPosition, yVelocity, baseYPosition = 0, screenMovement = 0, yMovement = 0;
+	const double gravity = 300, shelfWidth[SHELVES_NUMBER] = { SCREEN_WIDTH-250, 1300, 400, 800, 150 }, shelfHeight[SHELVES_NUMBER] = { 30, 30, 50, 40, 40 }, shelfShift[SHELVES_NUMBER] = { 0, SCREEN_WIDTH, SCREEN_WIDTH+700, SCREEN_WIDTH+1200, SCREEN_WIDTH+1500 }, shelfElevation[SHELVES_NUMBER] = { 0, 50, 150, 220, 260 };
+	double delta, worldTime, worldRealTime, fpsTimer, fps, distance, distance2, distance3, distance4, shelfDistance[SHELVES_NUMBER] = { 0,0,0,0,0}, velocity, yPosition, yVelocity, baseYPosition = 0, screenMovement = 0, yMovement = 0;
 	SDL_Event event;
-	SDL_Surface *screen, *charset, *unicorn, *platform, *background, *obstacle, *shelf[3], *hitbox, *hitbox2;
+	SDL_Surface *screen, *charset, *unicorn, *platform, *background, *obstacle, *shelf[SHELVES_NUMBER], *hitbox, *hitbox2;
 	SDL_Texture *scrtex;
 	SDL_Window *window;
 	SDL_Renderer *renderer;
-	SDL_Rect unicorn_hitbox, obstacle_hitbox, platform_hitbox, shelf_hitbox[3];
+	SDL_Rect unicorn_hitbox, obstacle_hitbox, platform_hitbox, shelf_hitbox[SHELVES_NUMBER];
+
+	double maxWidth = 0, maxShift = 0;
+	for (int i = 1; i < SHELVES_NUMBER; i++) {
+		maxShift = fmax(maxShift, shelfShift[i]);
+		maxWidth = fmax(maxWidth, shelfWidth[i]);
+	}
 
 	// okno konsoli nie jest widoczne, je¿eli chcemy zobaczyæ
 	// komunikaty wypisywane printf-em trzeba w opcjach:
@@ -429,12 +434,12 @@ int main(int argc, char **argv) {
 
 		//hitbox przeszkód
 		obstacle_hitbox.x = SCREEN_WIDTH + 100 - distance3;
-		obstacle_hitbox.y = SCREEN_HEIGHT - OBSTACLE_HEIGHT - PLATFORM_HEIGHT + yMovement;
+		obstacle_hitbox.y = SCREEN_HEIGHT - OBSTACLE_HEIGHT + yMovement;
 
 		//hitboxy platform
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < SHELVES_NUMBER; i++) {
 			shelf_hitbox[i].x = shelfShift[i]-shelfDistance[i];
-			shelf_hitbox[i].y = SCREEN_HEIGHT - PLATFORM_HEIGHT - shelfElevation[i] + yMovement;
+			shelf_hitbox[i].y = SCREEN_HEIGHT - shelfElevation[i] + yMovement;
 		}
 		//wype³niam ekran czarnym
 		SDL_FillRect(screen, NULL, czarny);
@@ -448,18 +453,20 @@ int main(int argc, char **argv) {
 		//platformy sie zapetlaja
 		//if (SCREEN_WIDTH + 100 - distance4 < -1200) distance4 = 0;
 		//if (700 + SCREEN_WIDTH > shelfDistance[0]) shelfDistance[0] == 0;
-		for (int i = 0; i < SHELVES_NUMBER; i++) {
-			if (shelfShift[i] - shelfDistance[i] < -shelfWidth[i])shelfDistance[i]=0;
+		
+		for (int i = 1; i < SHELVES_NUMBER; i++) {
+			if (maxShift - shelfDistance[i] < -maxWidth) shelfDistance[i]=0;
 		}
 		//tworze t³o
 		DrawSurface(screen, background, -distance, 0);
 		//tworze unicorna
 		DrawSurface(screen, unicorn, 0, (SCREEN_HEIGHT/2 - UNICORN_HEIGHT/2 - screenMovement));
 		//tworze przeszkode
-		DrawSurface(screen, obstacle, SCREEN_WIDTH + 100 - distance3, SCREEN_HEIGHT - OBSTACLE_HEIGHT - PLATFORM_HEIGHT + yMovement);
+		DrawSurface(screen, obstacle, SCREEN_WIDTH + 100 - distance3, SCREEN_HEIGHT - OBSTACLE_HEIGHT + yMovement);
 		//tworze podloge
 		for (int i = 0; i < SHELVES_NUMBER; i++) {
-			DrawSurface(screen, shelf[i], shelfShift[i] - shelfDistance[i], SCREEN_HEIGHT - PLATFORM_HEIGHT - shelfElevation[i] + yMovement);
+			DrawSurface(screen, shelf[i], shelfShift[i] - shelfDistance[i], SCREEN_HEIGHT - shelfElevation[i] + yMovement);
+			//printf("%d\t%f\t%f\n", i, shelfShift[i] - shelfDistance[i], SCREEN_HEIGHT - shelfElevation[i] + yMovement);
 			//DrawSurface(screen, shelf2, shelfShift[1] - shelfDistance[1], SCREEN_HEIGHT - PLATFORM_HEIGHT - shelfElevation[1] + yMovement);
 			//DrawSurface(screen, shelf3, shelfShift[2] - shelfDistance[2], SCREEN_HEIGHT - PLATFORM_HEIGHT - shelfElevation[2] + yMovement);
 		}
@@ -516,7 +523,7 @@ int main(int argc, char **argv) {
 
 		//resetuje gre
 		if (currentKeyStates[SDL_SCANCODE_N] || yPosition == MINIMAL_Y) {
-			ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak);
+			ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak, shelfDistance);
 		}
 		if (currentKeyStates[SDL_SCANCODE_ESCAPE]) quit = 1;
 		
@@ -525,7 +532,7 @@ int main(int argc, char **argv) {
 			distance2 += velocity;
 			distance3 += velocity;
 			distance4 += velocity;
-			for (int i = 0; i < 3; i++) shelfDistance[i] += velocity;
+			for (int i = 0; i < SHELVES_NUMBER; i++) shelfDistance[i] += velocity;
 		}
 
 		if (dash) {
@@ -577,16 +584,16 @@ int main(int argc, char **argv) {
 		
 
 		if (CheckCollision(unicorn_hitbox, obstacle_hitbox, 'o')) {
-			ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak);
+			ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak, shelfDistance);
 		}
 
 		//printf("%d\t%d\t%d\n", CheckCollision(unicorn_hitbox, shelf_hitbox[0], 'p'), CheckCollision(unicorn_hitbox, shelf_hitbox[1], 'p'), CheckCollision(unicorn_hitbox, shelf_hitbox[2], 'p'));
 		//printf("%d\n", jumping);
-		printf("%f\t%f\t%f\t%f\t%d\n", yPosition, baseYPosition, screenMovement, yMovement, CheckCollision(unicorn_hitbox, shelf_hitbox[2], 'p'));
+		//printf("%f\t%f\t%f\t%f\t%d\n", yPosition, baseYPosition, screenMovement, yMovement, CheckCollision(unicorn_hitbox, shelf_hitbox[2], 'p'));
 		walking = 0;
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < SHELVES_NUMBER; i++) {
 			if (CheckCollision(unicorn_hitbox, shelf_hitbox[i], 'p') == 1) {
-				ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak);
+				ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak, shelfDistance);
 			}
 
 			if (CheckCollision(unicorn_hitbox, shelf_hitbox[i], 'p') == 2) {
