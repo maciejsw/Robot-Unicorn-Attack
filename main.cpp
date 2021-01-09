@@ -25,7 +25,10 @@ extern "C" {
 #define BASE_VELOCITY 0.3
 #define MINIMAL_Y -400
 #define EPSILON 5
-#define SHELVES_NUMBER 5
+#define SHELVES_NUMBER 6
+#define STALAGTITE_WIDTH 80
+#define STALAGTITE_HEIGHT 170
+#define OBSTACLES_NUMBER 2
 
 // narysowanie napisu txt na powierzchni screen, zaczynaj¹c od punktu (x, y)
 // charset to bitmapa 128x128 zawieraj¹ca znaki
@@ -132,7 +135,7 @@ int CheckCollision(SDL_Rect first, SDL_Rect second, char type)
 	return 1;
 }
 
-void ClearGame(double* distance, double* distance2, double* distance3, double* distance4, double* worldTime, double* worldRealTime, double* baseYPosition, double* yPosition, int* dashCd, double* screenMovement, double* yMovement, int* jumping, int* peak, double shelfDistance[]) {
+void ClearGame(double* distance, double* distance2, double* distance3, double* distance4, double* worldTime, double* worldRealTime, double* baseYPosition, double* yPosition, int* dashCd, double* screenMovement, double* yMovement, int* jumping, int* peak, double shelfDistance[], double* stalagtiteDistance, int* lives) {
 	*distance = 0;
 	*distance2 = 0;
 	*distance3 = 0;
@@ -146,6 +149,8 @@ void ClearGame(double* distance, double* distance2, double* distance3, double* d
 	*yMovement = 0;
 	*jumping = 1;
 	*peak = 1;
+	*stalagtiteDistance = 0;
+	(*lives)--;
 	for (int i = 0; i < SHELVES_NUMBER; i++) shelfDistance[i] = 0;
 }
 
@@ -156,15 +161,15 @@ extern "C"
 
 int main(int argc, char **argv) {
 	//wypierdol distance2 i distance4 i w ogole sprawdz czy to wszystko useful jest
-	int t1, t2, quit, frames, rc, jumping = 0, controls = 0, dash = 0, dashCd = 0, double_jump = 0, peak = 0, walking=0;
-	const double gravity = 300, shelfWidth[SHELVES_NUMBER] = { SCREEN_WIDTH-250, 1300, 400, 800, 150 }, shelfHeight[SHELVES_NUMBER] = { 30, 30, 50, 40, 40 }, shelfShift[SHELVES_NUMBER] = { 0, SCREEN_WIDTH, SCREEN_WIDTH+700, SCREEN_WIDTH+1200, SCREEN_WIDTH+1500 }, shelfElevation[SHELVES_NUMBER] = { 0, 50, 150, 220, 260 };
-	double delta, worldTime, worldRealTime, fpsTimer, fps, distance, distance2, distance3, distance4, shelfDistance[SHELVES_NUMBER] = { 0,0,0,0,0}, velocity, yPosition, yVelocity, baseYPosition = 0, screenMovement = 0, yMovement = 0;
+	int t1, t2, quit, frames, rc, jumping = 0, controls = 0, dash = 0, dashCd = 0, double_jump = 0, peak = 0, walking = 0, lives = 3;
+	const double gravity = 300, shelfWidth[SHELVES_NUMBER] = { 350, 700,300, 700, 700, 200 }, shelfHeight[SHELVES_NUMBER] = { 30, 30, 30, 30, 30, 30 }, shelfShift[SHELVES_NUMBER] = { 0, SCREEN_WIDTH,SCREEN_WIDTH + 250, SCREEN_WIDTH + 900, SCREEN_WIDTH + 2000, SCREEN_WIDTH + 2300 }, shelfElevation[SHELVES_NUMBER] = { 100, 270, 420, 170, 270, 300 };
+	double delta, worldTime, worldRealTime, fpsTimer, fps, stalagtiteDistance, distance, distance2, distance3, distance4, shelfDistance[SHELVES_NUMBER] = { 0,0,0,0,0,0}, velocity, yPosition, yVelocity, baseYPosition = 0, screenMovement = 0, yMovement = 0;
 	SDL_Event event;
-	SDL_Surface *screen, *charset, *unicorn, *platform, *background, *obstacle, *shelf[SHELVES_NUMBER], *hitbox, *hitbox2;
+	SDL_Surface *screen, *charset, *unicorn, *platform, *background, *obstacle[OBSTACLES_NUMBER], *shelf[SHELVES_NUMBER], *stalagtite, *hitbox, *hitbox2, *life[3];
 	SDL_Texture *scrtex;
 	SDL_Window *window;
 	SDL_Renderer *renderer;
-	SDL_Rect unicorn_hitbox, obstacle_hitbox, platform_hitbox, shelf_hitbox[SHELVES_NUMBER];
+	SDL_Rect unicorn_hitbox, obstacle_hitbox[2], platform_hitbox, shelf_hitbox[SHELVES_NUMBER], stalagtite_hitbox;
 
 	double maxWidth = 0, maxShift = 0;
 	for (int i = 1; i < SHELVES_NUMBER; i++) {
@@ -231,9 +236,7 @@ int main(int argc, char **argv) {
 		SDL_Quit();
 		return 1;
 		};
-	/*SDL_Surface **shelf = (SDL_Surface**)malloc(4 * sizeof(SDL_Surface*));
-	for (int i = 0; i < SHELVES_NUMBER; i++) shelf[i] = (SDL_Surface*)malloc(sizeof(SDL_Surface));*/
-	//³aduje plik z platform¹
+
 	for (int i = 0; i < SHELVES_NUMBER; i++) {
 		shelf[i] = SDL_LoadBMP("./floor.bmp");
 		if (shelf[i] == NULL) {
@@ -246,8 +249,10 @@ int main(int argc, char **argv) {
 			SDL_Quit();
 			return 1;
 		};
-		/*shelf2 = SDL_LoadBMP("./obstacle.bmp");
-		if (shelf1 == NULL) {
+	}
+
+	stalagtite = SDL_LoadBMP("./stalagtite.bmp");
+		if (stalagtite == NULL) {
 			printf("SDL_LoadBMP(floor.bmp) error: %s\n", SDL_GetError());
 			SDL_FreeSurface(charset);
 			SDL_FreeSurface(screen);
@@ -257,18 +262,6 @@ int main(int argc, char **argv) {
 			SDL_Quit();
 			return 1;
 		};
-		shelf3 = SDL_LoadBMP("./obstacle.bmp");
-		if (shelf1 == NULL) {
-			printf("SDL_LoadBMP(floor.bmp) error: %s\n", SDL_GetError());
-			SDL_FreeSurface(charset);
-			SDL_FreeSurface(screen);
-			SDL_DestroyTexture(scrtex);
-			SDL_DestroyWindow(window);
-			SDL_DestroyRenderer(renderer);
-			SDL_Quit();
-			return 1;
-		};*/
-	}
 	
 	//³aduje pokazywanie hitboxa
 	hitbox = SDL_LoadBMP("./hitbox.bmp");
@@ -300,6 +293,9 @@ int main(int argc, char **argv) {
 	hitbox->h = SHELF_HEIGHT;
 	hitbox->w = SHELF_WIDTH;
 
+	stalagtite->h = STALAGTITE_HEIGHT;
+	stalagtite->w = STALAGTITE_WIDTH;
+
 	hitbox2->h = UNICORN_HEIGHT;
 	hitbox2->w = UNICORN_WIDTH;
 
@@ -322,31 +318,55 @@ int main(int argc, char **argv) {
 	unicorn_hitbox.w = UNICORN_WIDTH;
 
 	//wymiary hitboxu przeszkody
-	obstacle_hitbox.h = OBSTACLE_HEIGHT;
-	obstacle_hitbox.w = OBSTACLE_WIDTH;
+	for (int i = 0; i < OBSTACLES_NUMBER; i++) {
+		obstacle_hitbox[i].h = OBSTACLE_HEIGHT;
+		obstacle_hitbox[i].w = OBSTACLE_WIDTH;
+	}
+	
 
 	//wymiary hitboxu pod³ogi
 	for (int i = 0; i < SHELVES_NUMBER; i++) {
 		shelf_hitbox[i].h = shelfHeight[i];
 		shelf_hitbox[i].w = shelfWidth[i];
 	}
+
+	stalagtite_hitbox.h = STALAGTITE_HEIGHT;
+	stalagtite_hitbox.w = STALAGTITE_WIDTH;
 	
 	//³aduje plik z przeszkoda
-	obstacle = SDL_LoadBMP("./obstacle.bmp");
-	if (obstacle == NULL) {
-		printf("SDL_LoadBMP(eti.bmp) error: %s\n", SDL_GetError());
-		SDL_FreeSurface(charset);
-		SDL_FreeSurface(screen);
-		SDL_DestroyTexture(scrtex);
-		SDL_DestroyWindow(window);
-		SDL_DestroyRenderer(renderer);
-		SDL_Quit();
-		return 1;
-	};
+	for (int i = 0; i < OBSTACLES_NUMBER; i++) {
+		obstacle[i] = SDL_LoadBMP("./obstacle.bmp");
+		if (obstacle == NULL) {
+			printf("SDL_LoadBMP(eti.bmp) error: %s\n", SDL_GetError());
+			SDL_FreeSurface(charset);
+			SDL_FreeSurface(screen);
+			SDL_DestroyTexture(scrtex);
+			SDL_DestroyWindow(window);
+			SDL_DestroyRenderer(renderer);
+			SDL_Quit();
+			return 1;
+		};
+		obstacle[i]->h = OBSTACLE_HEIGHT;
+		obstacle[i]->w = OBSTACLE_WIDTH;
+	}
+
+	for (int i = 0; i < 3; i++) {
+		life[i] = SDL_LoadBMP("./life.bmp");
+		if (life == NULL) {
+			printf("SDL_LoadBMP(eti.bmp) error: %s\n", SDL_GetError());
+			SDL_FreeSurface(charset);
+			SDL_FreeSurface(screen);
+			SDL_DestroyTexture(scrtex);
+			SDL_DestroyWindow(window);
+			SDL_DestroyRenderer(renderer);
+			SDL_Quit();
+			return 1;
+		};
+	}
+	
 
 	//przycinam przeszkodê
-	obstacle->h = OBSTACLE_HEIGHT;
-	obstacle->w = OBSTACLE_WIDTH;
+	
 	
 	////³aduje plik z pod³og¹
 	//platform = SDL_LoadBMP("./floor.bmp");
@@ -375,6 +395,8 @@ int main(int argc, char **argv) {
 		return 1;
 	};
 
+
+
 	//deklaruje kolory
 	char text[128];
 	int czarny = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
@@ -396,6 +418,7 @@ int main(int argc, char **argv) {
 	distance2 = 0;
 	distance3 = 0;
 	distance4 = 0;
+	stalagtiteDistance = 0;
 	velocity = BASE_VELOCITY;
 	yPosition = baseYPosition;
 	yVelocity = 0;
@@ -433,19 +456,34 @@ int main(int argc, char **argv) {
 		unicorn_hitbox.y = SCREEN_HEIGHT / 2 - UNICORN_HEIGHT / 2 - screenMovement;
 
 		//hitbox przeszkód
-		obstacle_hitbox.x = SCREEN_WIDTH + 100 - distance3;
-		obstacle_hitbox.y = SCREEN_HEIGHT - OBSTACLE_HEIGHT + yMovement;
+		for (int i = 0; i < OBSTACLES_NUMBER; i++) {
+			obstacle_hitbox[i].x = SCREEN_WIDTH + 100 - distance3;
+			obstacle_hitbox[i].y = SCREEN_HEIGHT - OBSTACLE_HEIGHT + yMovement;
+		}
+		
 
 		//hitboxy platform
 		for (int i = 0; i < SHELVES_NUMBER; i++) {
 			shelf_hitbox[i].x = shelfShift[i]-shelfDistance[i];
 			shelf_hitbox[i].y = SCREEN_HEIGHT - shelfElevation[i] + yMovement;
+			if (i == 2) {
+				obstacle_hitbox[0].x = shelfShift[i] - shelfDistance[i] + 200;
+				obstacle_hitbox[0].y = SCREEN_HEIGHT - shelfElevation[i] + yMovement - OBSTACLE_HEIGHT;
+			}
+			else if(i==3) {
+				obstacle_hitbox[1].x = shelfShift[i] - shelfDistance[i] + 200;
+				obstacle_hitbox[1].y = SCREEN_HEIGHT - shelfElevation[i] + yMovement - OBSTACLE_HEIGHT;
+			}
 		}
+
+		stalagtite_hitbox.x = SCREEN_WIDTH + 100 - stalagtiteDistance;
+		stalagtite_hitbox.y = -250 + yMovement;
 		//wype³niam ekran czarnym
 		SDL_FillRect(screen, NULL, czarny);
 
 		//t³o sie zapetla
 		if (distance > BACKGROUND_WIDTH - SCREEN_WIDTH) distance = 0;
+		if (SCREEN_WIDTH + 100 - stalagtiteDistance < -STALAGTITE_WIDTH) stalagtiteDistance = 0;
 		//podloga sie zapetla
 		//if (distance2 > PLATFORM_WIDTH - SCREEN_WIDTH) distance2 = 0;
 		//przeszkoda sie zapetla
@@ -461,14 +499,12 @@ int main(int argc, char **argv) {
 		DrawSurface(screen, background, -distance, 0);
 		//tworze unicorna
 		DrawSurface(screen, unicorn, 0, (SCREEN_HEIGHT/2 - UNICORN_HEIGHT/2 - screenMovement));
-		//tworze przeszkode
-		DrawSurface(screen, obstacle, SCREEN_WIDTH + 100 - distance3, SCREEN_HEIGHT - OBSTACLE_HEIGHT + yMovement);
+		DrawSurface(screen, stalagtite, SCREEN_WIDTH + 100 - stalagtiteDistance, -250 + yMovement);
 		//tworze podloge
 		for (int i = 0; i < SHELVES_NUMBER; i++) {
 			DrawSurface(screen, shelf[i], shelfShift[i] - shelfDistance[i], SCREEN_HEIGHT - shelfElevation[i] + yMovement);
-			//printf("%d\t%f\t%f\n", i, shelfShift[i] - shelfDistance[i], SCREEN_HEIGHT - shelfElevation[i] + yMovement);
-			//DrawSurface(screen, shelf2, shelfShift[1] - shelfDistance[1], SCREEN_HEIGHT - PLATFORM_HEIGHT - shelfElevation[1] + yMovement);
-			//DrawSurface(screen, shelf3, shelfShift[2] - shelfDistance[2], SCREEN_HEIGHT - PLATFORM_HEIGHT - shelfElevation[2] + yMovement);
+			if (i == 2) DrawSurface(screen, obstacle[0], shelfShift[i] - shelfDistance[i]+200, SCREEN_HEIGHT - shelfElevation[i] + yMovement - OBSTACLE_HEIGHT);
+			else if(i==3) DrawSurface(screen, obstacle[1], shelfShift[i] - shelfDistance[i] + 200, SCREEN_HEIGHT - shelfElevation[i] + yMovement - OBSTACLE_HEIGHT);
 		}
 		
 		//wyœwietlam hitboxy i troche useless protok¹tów
@@ -476,7 +512,9 @@ int main(int argc, char **argv) {
 		//DrawSurface(screen, hitbox, platform_hitbox.x, platform_hitbox.y);
 		//DrawSurface(screen, hitbox2, unicorn_hitbox.x, unicorn_hitbox.y);
 
-		//liczneie fpsow
+		printf("%d\n", lives);
+
+		//liczenie fpsow
 		fpsTimer += delta;
 		if (fpsTimer > 0.5) {
 			fps = frames * 2;
@@ -487,6 +525,11 @@ int main(int argc, char **argv) {
 		// tekst informacyjny / info text
 		DrawRectangle(screen, 4, 4, SCREEN_WIDTH / 4.5, SCREEN_HEIGHT / 30, czerwony, niebieski);
 		sprintf(text, "Czas gry = %.1lf ", worldTime);
+
+		for (int i = 0; i < lives; i++) {
+			DrawSurface(screen, life[i], SCREEN_WIDTH-30*(i+1), 4);
+		}
+		
 		DrawString(screen, 12, 8, text, charset);
 		SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);
 		//SDL_RenderClear(renderer);
@@ -522,17 +565,23 @@ int main(int argc, char **argv) {
 		const Uint8* currentKeyStates = SDL_GetKeyboardState(NULL);
 
 		//resetuje gre
-		if (currentKeyStates[SDL_SCANCODE_N] || yPosition == MINIMAL_Y) {
-			ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak, shelfDistance);
+		if (currentKeyStates[SDL_SCANCODE_N] || !lives) {
+			ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak, shelfDistance, &stalagtiteDistance, &lives);
+			lives = 3;
 		}
 		if (currentKeyStates[SDL_SCANCODE_ESCAPE]) quit = 1;
 		
+		if (yPosition == MINIMAL_Y) {
+			ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak, shelfDistance, &stalagtiteDistance, &lives);
+		}
+
 		if (controls) {
 			distance += velocity;
 			distance2 += velocity;
 			distance3 += velocity;
 			distance4 += velocity;
 			for (int i = 0; i < SHELVES_NUMBER; i++) shelfDistance[i] += velocity;
+			stalagtiteDistance += velocity;
 		}
 
 		if (dash) {
@@ -582,18 +631,19 @@ int main(int argc, char **argv) {
 			peak = 0;
 		}
 		
-
-		if (CheckCollision(unicorn_hitbox, obstacle_hitbox, 'o')) {
-			ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak, shelfDistance);
+		for (int i = 0; i < OBSTACLES_NUMBER; i++) {
+			if (CheckCollision(unicorn_hitbox, obstacle_hitbox[i], 'o')) {
+				ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak, shelfDistance, &stalagtiteDistance, &lives);
+			}
 		}
-
+		if(CheckCollision(unicorn_hitbox, stalagtite_hitbox, 'o')) ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak, shelfDistance, &stalagtiteDistance, &lives);
 		//printf("%d\t%d\t%d\n", CheckCollision(unicorn_hitbox, shelf_hitbox[0], 'p'), CheckCollision(unicorn_hitbox, shelf_hitbox[1], 'p'), CheckCollision(unicorn_hitbox, shelf_hitbox[2], 'p'));
 		//printf("%d\n", jumping);
 		//printf("%f\t%f\t%f\t%f\t%d\n", yPosition, baseYPosition, screenMovement, yMovement, CheckCollision(unicorn_hitbox, shelf_hitbox[2], 'p'));
 		walking = 0;
 		for (int i = 0; i < SHELVES_NUMBER; i++) {
 			if (CheckCollision(unicorn_hitbox, shelf_hitbox[i], 'p') == 1) {
-				ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak, shelfDistance);
+				ClearGame(&distance, &distance2, &distance3, &distance4, &worldTime, &worldRealTime, &baseYPosition, &yPosition, &dashCd, &screenMovement, &yMovement, &jumping, &peak, shelfDistance, &stalagtiteDistance, &lives);
 			}
 
 			if (CheckCollision(unicorn_hitbox, shelf_hitbox[i], 'p') == 2) {

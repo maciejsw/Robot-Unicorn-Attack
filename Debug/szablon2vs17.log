@@ -1,23 +1,33 @@
 ﻿  main.cpp
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(312,30): warning C4244: "=": konwersja z "const double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(313,29): warning C4244: "=": konwersja z "const double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(309,30): warning C4244: "=": konwersja z "const double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(310,29): warning C4244: "=": konwersja z "const double" do "int", możliwa utrata danych
 C:\Users\mrswi\Desktop\template-project-2\main.cpp(330,36): warning C4244: "=": konwersja z "const double" do "int", możliwa utrata danych
 C:\Users\mrswi\Desktop\template-project-2\main.cpp(331,35): warning C4244: "=": konwersja z "const double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(433,61): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(436,42): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(437,55): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(441,37): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(442,58): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(461,35): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(463,71): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(465,97): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(465,52): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(468,102): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(468,48): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(488,44): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(510,15): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(574,27): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(489,3): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(163,44): warning C4101: "platform": lokalna zmienna, do której nie istnieje odwołanie
-C:\Users\mrswi\Desktop\template-project-2\main.cpp(167,44): warning C4101: "platform_hitbox": lokalna zmienna, do której nie istnieje odwołanie
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(457,61): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(461,46): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(462,59): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(468,37): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(469,58): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(471,61): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(472,74): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(475,61): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(476,74): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(480,44): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(481,30): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(500,35): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(502,71): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(503,81): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(503,54): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(506,102): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(506,48): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(507,133): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(507,81): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(508,137): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(508,84): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(527,44): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(554,15): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(624,27): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(528,3): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(169,44): warning C4101: "platform": lokalna zmienna, do której nie istnieje odwołanie
+C:\Users\mrswi\Desktop\template-project-2\main.cpp(173,47): warning C4101: "platform_hitbox": lokalna zmienna, do której nie istnieje odwołanie
   szablon2vs17.vcxproj -> C:\Users\mrswi\Desktop\template-project-2\Debug\szablon2vs17.exe
