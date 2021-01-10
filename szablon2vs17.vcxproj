@@ -25,6 +25,9 @@
     <Image Include="cs8x8.bmp" />
     <Image Include="eti.bmp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="main.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{16725DAB-C5AF-413E-A856-9D4B087AFD39}</ProjectGuid>
